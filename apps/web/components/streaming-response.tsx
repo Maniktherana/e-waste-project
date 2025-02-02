@@ -30,6 +30,7 @@ export default function StreamingResponse({
   const [response, setResponse] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isComplete, setIsComplete] = useState(false);
+  const [showClass, setShowClass] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,6 +40,10 @@ export default function StreamingResponse({
       setIsComplete(false);
       return;
     }
+
+    setTimeout(() => {
+      setShowClass(true);
+    }, 1000);
 
     if (!location || !imageClass) {
       return;
@@ -72,6 +77,7 @@ export default function StreamingResponse({
 
     return () => {
       clearTimeout(timeoutId);
+      setShowClass(false);
     };
   }, [isOpen, location, imageClass]);
 
@@ -81,8 +87,14 @@ export default function StreamingResponse({
         side="bottom"
         className="h-[80vh] sm:h-[70vh] p-6 max-w-screen-md mx-auto rounded-t-md">
         <div className="h-full flex flex-col">
-          <SheetTitle>
+          <SheetTitle className="flex justify-between mr-5">
             <ResponseHeader />
+            {showClass && (
+              <p className="font-mono text-sm font-light text-muted-foreground mb-4 animate-[fadeIn_0.2s_ease-in-out]">
+                Detected Class:{" "}
+                <span className="font-semibold">{imageClass}</span>
+              </p>
+            )}
           </SheetTitle>
 
           <ScrollArea
