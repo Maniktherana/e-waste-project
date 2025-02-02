@@ -14,10 +14,11 @@
   "dependencies": {
     "@repo/ui": "workspace:*",
     "lucide-react": "0.456.0",
-    "next-themes": "^0.4.3",
     "next": "^15.1.0",
+    "next-themes": "^0.4.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sonner": "^1.7.4"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

@@ -66,3 +66,36 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes skeleton {
+  0% {
+    transform: scaleX(0.1);
+    opacity: 0.1;
+  }
+  20% {
+    transform: scaleX(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0.1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

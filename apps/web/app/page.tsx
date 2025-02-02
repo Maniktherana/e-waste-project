@@ -1,14 +1,14 @@
-import { Button } from "@repo/ui/components/button";
+import ImageLocationForm from "@/components/form";
 
-export default function Page() {
+export default function Home() {
   return (
-    <div className="flex items-center justify-center min-h-svh">
-      <div className="flex flex-col items-center justify-center gap-4">
-        <h1 className="text-2xl font-bold">Hello World</h1>
-        <Button variant={"ghost"} size="sm">
-          Button
-        </Button>
-      </div>
+    <div
+      style={{
+        maxWidth: 1280,
+        margin: "0 auto",
+        padding: "4rem 2rem",
+      }}>
+      <ImageLocationForm />
     </div>
   );
 }
