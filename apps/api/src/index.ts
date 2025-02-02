@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
+
 import { streamSSE } from "hono/streaming";
 import { disposalLocations, disposalTypes } from "./data";
 
@@ -7,6 +9,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 
 const app = new Hono();
+app.use("/*", cors());
 
 type InferenceResponse = {
   class_id: number;
@@ -38,26 +41,6 @@ const submitSchema = z.object({
   location: z.string().min(1, "Location is required"),
 });
 
-const getImageType = async (
-  file: File,
-  url: string
-): Promise<InferenceResponse> => {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const res = await fetch(url, {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!res.ok) {
-    throw new Error(res.statusText);
-  }
-
-  const classifiedImage: InferenceResponse = await res.json();
-  return classifiedImage;
-};
-
 app.post(
   "/submit",
   zValidator("form", submitSchema, (result, c) => {
@@ -70,19 +53,26 @@ app.post(
     const file = body.get("file") as File;
     const submittedLocation = body.get("location") as string;
 
-    const foundLocations = disposalLocations.filter(
-      (location) => location.city === submittedLocation
-    );
-    const addressesAndContact: string = foundLocations
-      .map((location) => `${location.address}, ${location.contact}`)
-      .join(", ");
-
-    let classifiedImage: InferenceResponse;
     try {
-      classifiedImage = await getImageType(
-        file,
-        `${process.env.ML_INFERENCE_API_URL}/predict/`
-      );
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`${process.env.ML_INFERENCE_API_URL}/predict/`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(res.statusText);
+      }
+
+      const classifiedImage: InferenceResponse = await res.json();
+      const type = classifiedImage.class_name;
+
+      return c.json({
+        location: submittedLocation,
+        imageClass: type,
+      });
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error("Error classifying image:", error.message);
@@ -94,52 +84,74 @@ app.post(
       console.error("Unknown error classifying image:", error);
       return c.json({ error: "Failed to classify the image" }, 500);
     }
-
-    const type = classifiedImage.class_name;
-
-    return streamSSE(
-      c,
-      async (stream) => {
-        const genAI = new GoogleGenerativeAI(
-          process.env.GEMINI_API_KEY as string
-        );
-        const model = genAI.getGenerativeModel({
-          model: "gemini-1.5-flash",
-          systemInstruction: `You are an AI assistant specializing in electronic waste disposal guidance in India specifically. Your role is to provide clear, accurate, and location-specific instructions on how to properly dispose of various types of e-waste.
-        •	When responding, always start with: “Here’s how you can dispose of a ${type}:”
-        •	Explain where users can dispose of a ${type} by referencing ${addressesAndContact} and describing the appropriate disposal method from ${disposalTypes[type]}.
-        •	Provide helpful background information on the ${type}, including environmental impact, recycling benefits, and any legal considerations.
-        •	Always be polite, concise, and informative, ensuring the user understands their options clearly.`,
-        });
-
-        const prompt = `Hi, I'm located at ${submittedLocation} and I have a ${type} that I need to dispose of. Can you help me with the process?`;
-
-        const result = await model.generateContentStream(prompt);
-        let i = 0;
-        for await (const chunk of result.stream) {
-          const chunkText = chunk.text();
-          console.log(`sending message chunk ${i}`);
-          // console.log(chunkText);
-          await stream.writeSSE({
-            data: chunkText,
-            event: "message",
-            id: i.toString(),
-          });
-          i++;
-        }
-        await stream.close();
-      },
-      async (e, stream) => {
-        console.error("Error:", e.message);
-        await stream.writeSSE({
-          data: "An error occured during streaming with Gemini!",
-          event: "error",
-        });
-        await stream.close();
-      }
-    );
   }
 );
+
+app.get("/stream", async (c) => {
+  const location = c.req.query("location");
+  const imageClass = c.req.query("imageClass");
+
+  if (!location || !imageClass) {
+    return c.json(
+      {
+        error: "Missing query parameters: location and imageClass are required",
+      },
+      400
+    );
+  }
+
+  const foundLocations = disposalLocations.filter(
+    (loc) => loc.city === location
+  );
+  const addressesAndContact: string = foundLocations
+    .map((loc) => `${loc.address}, ${loc.contact}`)
+    .join(", ");
+
+  return streamSSE(
+    c,
+    async (stream) => {
+      const genAI = new GoogleGenerativeAI(
+        process.env.GEMINI_API_KEY as string
+      );
+      const model = genAI.getGenerativeModel({
+        model: "gemini-1.5-flash",
+        systemInstruction: `You are an AI assistant specializing in electronic waste disposal guidance in India specifically. Your role is to provide clear, accurate, and location-specific instructions on how to properly dispose of various types of e-waste.
+        •	When responding, always start with: “Here’s how you can dispose of a ${imageClass}:”
+        •	Explain where users can dispose of a ${imageClass} by referencing ${addressesAndContact} and describing the appropriate disposal method from ${disposalTypes[imageClass]}.
+        •	Provide helpful background information on the ${imageClass}, including environmental impact, recycling benefits, and any legal considerations.
+        •	Always be polite, concise, and informative, ensuring the user understands their options clearly.`,
+      });
+
+      const prompt = `Hi, I'm located at ${location} and I have a ${imageClass} that I need to dispose of. Can you help me with the process?`;
+
+      const result = await model.generateContentStream(prompt);
+      let i = 0;
+      for await (const chunk of result.stream) {
+        const chunkText = chunk.text();
+        console.log(`sending message chunk ${i}-${location}-${imageClass}`);
+        await stream.writeSSE({
+          data: chunkText,
+          event: "message",
+          id: i.toString(),
+        });
+        i++;
+      }
+      await stream.writeSSE({
+        data: "[DONE]",
+        event: "message",
+      });
+      await stream.close();
+    },
+    async (e, stream) => {
+      console.error("Error:", e.message);
+      await stream.writeSSE({
+        data: "An error occurred during streaming with Gemini!",
+        event: "error",
+      });
+      await stream.close();
+    }
+  );
+});
 
 app.get("/health", (c) => {
   return c.json({ status: "healthy" });
