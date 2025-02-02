@@ -4,6 +4,7 @@
     "dev": "bun run --port 5002 --hot src/index.ts"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "hono": "^4.6.20"
   },
   "devDependencies": {
