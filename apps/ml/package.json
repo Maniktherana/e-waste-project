@@ -1,8 +1,9 @@
 {
-  "name": "ml-api",
+  "name": "@repo/ml",
   "scripts": {
-    "dev": "poetry run uvicorn main:app --reload --port 8000",
+    "dev": "poetry run uvicorn main:app --reload --port 5000",
     "build": "echo 'No build needed for Python project'",
-    "lint": "poetry run pylint main.py"
+    "lint": "poetry run pylint *.py",
+    "test": "poetry run pytest tests/"
   }
 }
