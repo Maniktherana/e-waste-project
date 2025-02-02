@@ -1,10 +1,9 @@
-import { Context, Hono } from "hono";
+import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { disposalLocations, disposalTypes } from "./data";
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { zValidator } from "@hono/zod-validator";
-import { BlankEnv, BlankInput } from "hono/types";
 import { z } from "zod";
 
 const app = new Hono();
