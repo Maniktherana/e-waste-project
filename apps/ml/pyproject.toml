@@ -13,6 +13,7 @@ fastapi = "^0.115.8"
 torch = "^2.6.0"
 torchvision = "^0.21.0"
 python-multipart = "^0.0.20"
+ruff = "^0.9.4"
 
 [[tool.poetry.source]]
 name = "pytorch"

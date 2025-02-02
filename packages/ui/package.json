@@ -5,8 +5,7 @@
   "private": true,
   "scripts": {
     "check-types": "tsc --noEmit",
-    "biome": "biome check .",
-    "biome:fix": "biome check . --write"
+    "format": "biome check . --write"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.1",

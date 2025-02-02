@@ -6,6 +6,7 @@
     "build": "turbo build",
     "dev": "turbo dev --parallel",
     "lint": "turbo lint",
+    "format": "turbo format",
     "prepare": "pnpm install --ignore-scripts",
     "postinstall": "cd apps/ml && poetry install"
   },
