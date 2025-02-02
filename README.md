@@ -10,9 +10,8 @@ Dataset sources:
 ## Requirements
 
 Ensure you have the following dependencies installed on your system:
- - Python 3.11
+ - [Python 3.11](https://www.python.org/)
  - [Poetry](https://python-poetry.org/)
- - [Node.js](https://nodejs.org/en/)
  - [bun](https://bun.sh/)
 
 ## Usage
