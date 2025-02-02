@@ -15,7 +15,7 @@ interface StreamingResponseProps {
 
 const ResponseHeader = memo(function ResponseHeader() {
   return (
-    <TextShimmer className="font-mono text-lg font-semibold mb-4" duration={2}>
+    <TextShimmer className="font-mono text-lg font-semibold" duration={2}>
       Analyzing Image...
     </TextShimmer>
   );
@@ -87,10 +87,10 @@ export default function StreamingResponse({
         side="bottom"
         className="h-[80vh] sm:h-[70vh] p-6 max-w-screen-md mx-auto rounded-t-md">
         <div className="h-full flex flex-col">
-          <SheetTitle className="flex justify-between mr-5">
+          <SheetTitle className="flex flex-col  mr-5 mb-4">
             <ResponseHeader />
             {showClass && (
-              <p className="font-mono text-sm font-light text-muted-foreground mb-4 animate-[fadeIn_0.2s_ease-in-out]">
+              <p className="font-mono text-sm font-light text-muted-foreground animate-[fadeIn_0.2s_ease-in-out]">
                 Detected Class:{" "}
                 <span className="font-semibold">{imageClass}</span>
               </p>
