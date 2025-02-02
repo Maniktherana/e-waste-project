@@ -1,0 +1,216 @@
+{
+  "UTTAR PRADESH": [
+    {
+      "city": "Greater Noida",
+      "address": "A-58, Udyog Kendra, ECOTECH –III, Vill Habibpur, Surajpur",
+      "contact": "Sultan: 9540943280 Toll Free No. 1800-2700-038"
+    },
+    {
+      "city": "Ghaziabad",
+      "address": "F636/637, MG Road",
+      "contact": "Sultan: 9540943280 Toll Free No. 1800-2700-038"
+    },
+    {
+      "city": "Noida",
+      "address": "C-98, Sector 4",
+      "contact": "Sultan: 9540943280 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "DELHI": [
+    {
+      "city": "Delhi",
+      "address": "Gali No-3, 358-A, Plot No – 21, Friends ColonySahadra",
+      "contact": "Sultan: 9540943280 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "HARYANA": [
+    {
+      "city": "Noida",
+      "address": "Auctus E Recycling Solution, NCR based recycling facility",
+      "contact": "Sultan: 9540943280 Toll Free No. 1800-2700-038"
+    },
+    {
+      "city": "Delhi",
+      "address": "Auctus E Recycling Solution, NCR based recycling facility",
+      "contact": "Sultan: 9540943280 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "GUJARAT": [
+    {
+      "city": "Ahmedabad",
+      "address": "Shop No-13, Sai Darshan Shopping Center, Hotel Sai Darshan Compound, Moriya – Patiya Teh – Sanand",
+      "contact": "Zaki: 9958746692 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "DAMAN & DIU": [
+    {
+      "city": "Ahmedabad",
+      "address": "Shop No-13, Sai Darshan Shopping Center, Hotel Sai Darshan Compound, Moriya – Patiya Teh – Sanand",
+      "contact": "Zaki: 9958746692 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "MADHYA PRADESH": [
+    {
+      "city": "Bhopal",
+      "address": "Sh. Anar Singh, House no -30, Khajuri Kalan, Mandideep Bye Pass Road",
+      "contact": "Lalit: 9761688731 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "ODISHA": [
+    {
+      "city": "Bhubaneswar",
+      "address": "Auctus e recycling solutions Pvt Limited Daruthenga, Khurda",
+      "contact": "Bangali Prasad: 9339748543 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "CHATTISGARH": [
+    {
+      "city": "Bhubaneswar",
+      "address": "Auctus e recycling solutions Pvt Limited Daruthenga, Khurda",
+      "contact": "Bangali Prasad: 9339748543 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "ASSAM": [
+    {
+      "city": "Kamrup",
+      "address": "Auctus e recycling solutions Pvt limited c/o NairulIslam, Notbam, House Number -3, Hatigaon",
+      "contact": "Ravikrant: 9954337060 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "ANDHRA PRADESH": [
+    {
+      "city": "Secundrabad",
+      "address": "Khaja Agency, Behind MMR Garden, RR Nagar, old Bowenpally",
+      "contact": "Lalit: 9761688731 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "KARNATAKA": [
+    {
+      "city": "Nelmangala",
+      "address": "Smt Seethaamma, Khata No 135 /52, Vinayaka Nagar",
+      "contact": "Naved: 9540943204 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "KERALA": [
+    {
+      "city": "Nelmangala",
+      "address": "Smt Seethaamma, Khata No 135 /52, Vinayaka Nagar",
+      "contact": "Naved: 9540943204 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "JHARKHAND": [
+    {
+      "city": "Ranchi",
+      "address": "SIDRAUL, PS Khijra, via Namkom",
+      "contact": "Bangali Prasad: 9339748543 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "BIHAR": [
+    {
+      "city": "Patna",
+      "address": "Auctus E Recycling Solutions Pvt Limited Phulwarisarif, Naya Tola masjid",
+      "contact": "Bangali Prasad: 9339748543 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "WEST BENGAL": [
+    {
+      "city": "Pargana",
+      "address": "Mauja, Gopalpur, Sarkarpool, Jholi No 111 Maheshtala",
+      "contact": "Bangali Prasad: 9339748543 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "UTTRAKHAND": [
+    {
+      "city": "Hardwar",
+      "address": "Rehmat Traders, Saleempur Chawk, SIDKUL byepass Road, Ranipur",
+      "contact": "Ranjan Pandey: 7834960626 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "PUNJAB": [
+    {
+      "city": "Ludhiana",
+      "address": "Extension Bhadowal LG warehouse Near Bhadowal Railway Station",
+      "contact": "Ranjan Pandey: 7834960626 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "JAMMU & KASHMIR": [
+    {
+      "city": "Jammu",
+      "address": "Plot No105, Ward No-6 Narwal, Transport Nagar",
+      "contact": "Sultan: 9906278323 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "GOA, MAHARASHTRA": [
+    {
+      "city": "Thane",
+      "address": "Auctus e Recycling solutions Pvt Limited, Arham Logistic Park, Bhiwandi bye pass",
+      "contact": "Zaki: 9958746692 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "RAJASTHAN": [
+    {
+      "city": "Jaipur",
+      "address": "F – 95, Road No-7, Behind Om Toyota Vishwa Karma Industrial Area",
+      "contact": "Rajesh: 9540943281 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "ARUNACHAL PRADESH": [
+    {
+      "city": "Bhalukpong",
+      "address": "Rekha Lamra, Arunachal Pradesh",
+      "contact": "Ravinder Kr Rai: 9954337060 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "MANIPUR": [
+    {
+      "city": "Thoubal",
+      "address": "M Boney Singh, Tentha Khongbal PO Wangjing",
+      "contact": "Ravinder Kr Rai: 9954337060 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "MEGHALAYA": [
+    {
+      "city": "Rebhoi",
+      "address": "Raju Mourah 12th Mile, Meghalaya – 793101",
+      "contact": "Ravinder Kr Rai: 9954337060 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "MIZORAM": [
+    {
+      "city": "Thoubal",
+      "address": "M Boney Singh, Tentha Khongbal PO Wangjing",
+      "contact": "Ravinder Kr Rai: 9954337060 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "NAGALAND": [
+    {
+      "city": "Dimapur",
+      "address": "Pritam Jaiswal Near ram Janki School",
+      "contact": "Ravinder Kr Rai: 9954337060 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "TELANGANA": [
+    {
+      "city": "Hyderabad",
+      "address": "E green planet Survey no.559/2 medchal panchayat",
+      "contact": "Lalit: 9761688731 Toll Free No. 1800-2700-038"
+    },
+    {
+      "city": "Hyderabad",
+      "address": "Khaja Agency, Behind MMR Garden, RR Nagar, old Bowenpally, Secundrabad.",
+      "contact": "Lalit: 9761688731 Toll Free No. 1800-2700-038"
+    }
+  ],
+  "TAMILNADU": [
+    {
+      "city": "Bangalore",
+      "address": "The collection points cater for any pickup from cities of Tamilnadu",
+      "contact": "Toll Free No. 1800-2700-038"
+    },
+    {
+      "city": "Cochin",
+      "address": "The collection points cater for any pickup from cities of Tamilnadu",
+      "contact": "Toll Free No. 1800-2700-038"
+    }
+  ]
+}
