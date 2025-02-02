@@ -35,4 +35,6 @@ npm-debug.log*
 .DS_Store
 *.pem
 
+# Python
 __pycache__
+.ruff_cache
