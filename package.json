@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "build": "turbo build",
-    "dev": "turbo dev",
-    "lint": "turbo lint"
+    "dev": "turbo dev --parallel",
+    "lint": "turbo lint",
+    "prepare": "pnpm install --ignore-scripts",
+    "postinstall": "cd apps/ml && poetry install"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

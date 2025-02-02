@@ -3,7 +3,11 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
-  "scripts": {},
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "biome": "biome check .",
+    "biome:fix": "biome check . --write"
+  },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.1",
     "class-variance-authority": "^0.7.0",

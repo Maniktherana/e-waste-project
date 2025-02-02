@@ -7,7 +7,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check-types": "tsc --noEmit",
+    "biome": "biome check .",
+    "biome:fix": "biome check . --write"
   },
   "dependencies": {
     "@workspace/ui": "workspace:*",

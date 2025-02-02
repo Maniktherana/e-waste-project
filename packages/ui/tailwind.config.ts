@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 import tailwindcssAnimate from "tailwindcss-animate";
+// @ts-ignore
 import { fontFamily } from "tailwindcss/defaultTheme";
 
 const config = {
