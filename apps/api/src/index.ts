@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
+import { disposalLocations, disposalTypes } from "./data";
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
