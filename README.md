@@ -10,6 +10,7 @@ Dataset sources:
 ## Requirements
 
 Ensure you have the following dependencies installed on your system:
+ - Python 3.11
  - [Poetry](https://python-poetry.org/)
  - [Node.js](https://nodejs.org/en/)
  - [pnpm](https://pnpm.io/)
