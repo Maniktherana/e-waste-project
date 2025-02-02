@@ -1,31 +1,29 @@
-# shadcn/ui monorepo template
+# E-Waste Project
 
-This template is for creating a monorepo with shadcn/ui.
+E-waste collection sources: 
+ - https://xp-pen.co.in/pages/e-waste-collection
+ - https://www.ewri.in/epri-service/#centres
+
+Dataset sources:
+ - https://www.kaggle.com/datasets/akshat103/e-waste-image-dataset
+
+## Requirements
+
+Ensure you have the following dependencies installed on your system:
+ - [Poetry](https://python-poetry.org/)
+ - [Node.js](https://nodejs.org/en/)
+ - [pnpm](https://pnpm.io/)
 
 ## Usage
 
-```bash
-pnpm dlx shadcn@latest init
-```
-
-## Adding components
-
-To add components to your app, run the following command at the root of your `web` app:
+To install the dependencies, run the following command:
 
 ```bash
-pnpm dlx shadcn@latest add button -c apps/web
+pnpm install
 ```
 
-This will place the ui components in the `packages/ui/src/components` directory.
+To start the development server, run the following command:
 
-## Tailwind
-
-Your `tailwind.config.ts` and `globals.css` are already set up to use the components from the `ui` package.
-
-## Using components
-
-To use the components in your app, import them from the `ui` package.
-
-```tsx
-import { Button } from "@repo/ui/components/ui/button"
+```bash
+pnpm dev
 ```
