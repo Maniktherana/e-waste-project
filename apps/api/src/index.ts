@@ -116,10 +116,15 @@ app.get("/stream", async (c) => {
       const model = genAI.getGenerativeModel({
         model: "gemini-1.5-flash",
         systemInstruction: `You are an AI assistant specializing in electronic waste disposal guidance in India specifically. Your role is to provide clear, accurate, and location-specific instructions on how to properly dispose of various types of e-waste.
-        •	When responding, always start with: “Here’s how you can dispose of a ${imageClass}:”
-        •	Explain where users can dispose of a ${imageClass} by referencing ${addressesAndContact} and describing the appropriate disposal method from ${disposalTypes[imageClass]}.
-        •	Provide helpful background information on the ${imageClass}, including environmental impact, recycling benefits, and any legal considerations.
-        •	Always be polite, concise, and informative, ensuring the user understands their options clearly.`,
+        •	When responding, always start with: Here’s how you can dispose of a ${imageClass}:
+        •	Explain where users can dispose of a ${imageClass} by referencing ${addressesAndContact} and describing the appropriate disposal method from ${disposalTypes[imageClass]}. Separate key information using <br> for better readability.
+        •	Provide helpful background information on the ${imageClass}, including:
+          •	Environmental impact: Explain how improper disposal affects the environment.
+          •	Recycling benefits: Highlight why recycling this item is important.
+          •	Legal considerations: Mention relevant e-waste regulations in India.
+        •	Format responses using HTML tags such as <strong>, <pre>, and <br> instead of standard markdown formatting.
+          •	Whenever you do decide to use <br> make sure you use it twice at once.
+        •	Always be polite, concise, and informative, ensuring the user clearly understands their disposal options.`,
       });
 
       const prompt = `Hi, I'm located at ${location} and I have a ${imageClass} that I need to dispose of. Can you help me with the process?`;
@@ -128,7 +133,8 @@ app.get("/stream", async (c) => {
       let i = 0;
       for await (const chunk of result.stream) {
         const chunkText = chunk.text();
-        console.log(`sending message chunk ${i}-${location}-${imageClass}`);
+        // console.log(`sending message chunk ${i}-${location}-${imageClass}`);
+        process.stdout.write(chunkText);
         await stream.writeSSE({
           data: chunkText,
           event: "message",

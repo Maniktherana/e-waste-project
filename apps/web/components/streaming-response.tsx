@@ -88,7 +88,13 @@ export default function StreamingResponse({
         className="h-[80vh] sm:h-[70vh] p-6 max-w-screen-md mx-auto rounded-t-md">
         <div className="h-full flex flex-col">
           <SheetTitle className="flex flex-col  mr-5 mb-4">
-            <ResponseHeader />
+            {isComplete ? (
+              <p className="font-mono text-lg font-semibold">
+                Analysis complete
+              </p>
+            ) : (
+              <ResponseHeader />
+            )}
             {showClass && (
               <p className="font-mono text-sm font-light text-muted-foreground animate-[fadeIn_0.2s_ease-in-out]">
                 Detected Class:{" "}
@@ -107,9 +113,8 @@ export default function StreamingResponse({
                 {response.map((chunk, i) => (
                   <span
                     key={i}
-                    className={cn("inline animate-[fadeIn_0.5s_ease-in-out]")}>
-                    {chunk}
-                  </span>
+                    className={cn("inline animate-[fadeIn_0.5s_ease-in-out]")}
+                    dangerouslySetInnerHTML={{ __html: chunk }}></span>
                 ))}
                 {!isComplete && !response.length && (
                   <div className="space-y-4">
