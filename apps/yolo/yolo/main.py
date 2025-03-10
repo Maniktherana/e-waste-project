@@ -12,6 +12,7 @@ import os
 import json
 import uvicorn
 import time
+import base64
 from typing import Dict, List, Optional, Union
 from ultralytics import YOLO
 
@@ -52,6 +53,9 @@ except Exception as e:
 
 # Dictionary to store peer connections
 pcs = set()
+
+# Store client detection data
+client_detections = {}
 
 class YOLOVideoStreamTrack(VideoStreamTrack):
     """
@@ -139,6 +143,7 @@ class YOLOVideoStreamTrack(VideoStreamTrack):
 async def index():
     return {"message": "YOLO WebRTC API is running"}
 
+
 @app.post("/offer")
 async def offer(request: Request):
     params = await request.json()
@@ -200,8 +205,6 @@ async def on_shutdown():
     coros = [pc_cleanup(pc) for pc in pcs]
     await asyncio.gather(*coros)
     pcs.clear()
-
-client_detections = {}
 
 @app.websocket("/ws/detections")
 async def websocket_detections(websocket: WebSocket):
@@ -401,7 +404,6 @@ class ClientDrawingYOLOVideoStreamTrack(VideoStreamTrack):
         
         return new_frame
 
-# Enhanced logging for the client drawing offer endpoint:
 @app.post("/client-drawing-offer")
 async def client_drawing_offer(request: Request):
     params = await request.json()
@@ -442,6 +444,155 @@ async def client_drawing_offer(request: Request):
     
     logger.info(f"Sending answer to client {client_id}")
     return {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}
+
+# NEW LOCAL-ONLY ENDPOINTS
+
+@app.websocket("/localonly/ws/detections")
+async def localonly_websocket_detections(websocket: WebSocket):
+    await websocket.accept()
+    logger.info(f"LocalOnly WebSocket connection ACCEPTED")
+    
+    # Generate unique client ID
+    client_id = str(uuid.uuid4())
+    client_detections[client_id] = {"active": True, "detections": []}
+    
+    logger.info(f"LocalOnly: Assigned client_id: {client_id}")
+    
+    # Send client ID to the frontend
+    await websocket.send_json({"type": "client_id", "client_id": client_id})
+    
+    try:
+        # Tracking variables for debounced logging
+        last_logged_time = 0
+        last_logged_classes = set()
+        
+        while True:
+            # Wait for message from client
+            message = await websocket.receive_text()
+            
+            try:
+                data = json.loads(message)
+                
+                # Process video frame if received
+                if data.get("type") == "video_frame":
+                    # Extract frame data
+                    frame_data_url = data.get("frame")
+                    
+                    # Skip header of data URL
+                    header, encoded = frame_data_url.split(",", 1)
+                    
+                    # Decode base64 image
+                    binary = base64.b64decode(encoded)
+                    
+                    # Convert to numpy array
+                    nparr = np.frombuffer(binary, np.uint8)
+                    
+                    # Decode image
+                    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                    
+                    if img is not None:
+                        # Get image dimensions
+                        img_height, img_width = img.shape[:2]
+                        
+                        # Run YOLO detection
+                        results = model.predict(source=img, conf=0.25, verbose=False)
+                        
+                        # Process results
+                        detections = []
+                        current_classes = set()
+                        
+                        if results and len(results) > 0:
+                            boxes = results[0].boxes.data.cpu().numpy()
+                            
+                            # Check if we should log based on new/changed detections
+                            should_log = False
+                            current_time = time.time()
+                            
+                            # Gather all detected class names
+                            detected_classes = {}
+                            
+                            for box in boxes:
+                                x1, y1, x2, y2, conf, class_id = box
+                                class_name = model.names[int(class_id)]
+                                detected_classes[class_name] = conf
+                                current_classes.add(class_name)
+                                
+                                # Add detection to results
+                                detections.append({
+                                    "x1": float(x1),
+                                    "y1": float(y1),
+                                    "x2": float(x2),
+                                    "y2": float(y2),
+                                    "confidence": float(conf),
+                                    "class_id": int(class_id),
+                                    "class_name": class_name,
+                                    "image_width": img_width,
+                                    "image_height": img_height
+                                })
+                            
+                            # Check if any detected class is new or recent one is missing
+                            client_last_logged = last_logged_predictions[client_id]
+                            
+                            # Check for new classes or classes that disappeared
+                            previous_classes = set(client_last_logged.keys())
+                            if current_classes != previous_classes:
+                                should_log = True
+                            
+                            # Check for classes whose last log was more than 1 second ago
+                            for class_name in current_classes:
+                                if class_name not in client_last_logged or (current_time - client_last_logged[class_name]) > 1.0:
+                                    should_log = True
+                                    break
+                            
+                            # Log if needed
+                            if should_log and len(detected_classes) > 0:
+                                logger.info(f"LocalOnly Client {client_id}: Found {len(detections)} detections: {', '.join([f'{c} ({v:.2f})' for c, v in detected_classes.items()])}")
+                                
+                                # Update last logged timestamps for all current classes
+                                for class_name in current_classes:
+                                    client_last_logged[class_name] = current_time
+                            
+                            # Clear out classes that are no longer detected
+                            for class_name in list(client_last_logged.keys()):
+                                if class_name not in current_classes:
+                                    del client_last_logged[class_name]
+                        
+                        # Store latest detections for this client
+                        client_detections[client_id]["detections"] = detections
+                        
+                        # Send detections back to client
+                        await websocket.send_json({
+                            "type": "detections",
+                            "data": detections
+                        })
+                    else:
+                        logger.warning(f"LocalOnly: Failed to decode image for client {client_id}")
+                        
+                        # Send empty detections to client
+                        await websocket.send_json({
+                            "type": "detections",
+                            "data": []
+                        })
+            except json.JSONDecodeError:
+                logger.error(f"LocalOnly: Failed to parse message from client {client_id}")
+            except Exception as e:
+                logger.error(f"LocalOnly: Error processing frame from client {client_id}: {str(e)}")
+                
+                # Send empty detections to client
+                await websocket.send_json({
+                    "type": "detections",
+                    "data": []
+                })
+            
+    except Exception as e:
+        logger.error(f"LocalOnly WebSocket error for client {client_id}: {e}")
+    finally:
+        logger.info(f"LocalOnly WebSocket connection closed for client {client_id}")
+        if client_id in client_detections:
+            client_detections[client_id]["active"] = False
+            del client_detections[client_id]
+        if client_id in last_logged_predictions:
+            del last_logged_predictions[client_id]
 
 if __name__ == "__main__":
     logger.info("Starting server...")
