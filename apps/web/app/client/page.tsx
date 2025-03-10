@@ -1,5 +1,4 @@
 // app/client/page.tsx
-//updated one claude only check this please
 "use client";
 
 import { Alert, AlertDescription } from "@repo/ui/components/alert";
@@ -33,7 +32,6 @@ interface Detection {
 }
 
 export default function ClientDrawingPage() {
-  // Existing refs and state...
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -49,7 +47,6 @@ export default function ClientDrawingPage() {
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.25);
   const [boxColor, setBoxColor] = useState("#00FF00");
 
-  // New debug state
   const [debugInfo, setDebugInfo] = useState<{
     wsStatus: string;
     lastMessageTime: number | null;
@@ -66,13 +63,10 @@ export default function ClientDrawingPage() {
     videoSize: null,
   });
 
-  // Function to set up WebSocket connection for detection data
+  // Set up WebSocket connection for detection data
   const setupWebSocket = () => {
-    // Use a more specific URL with 127.0.0.1 instead of localhost
     const wsUrl = `ws://127.0.0.1:5005/ws/detections`;
-    console.log(
-      `Attempting WebSocket connection to: ${wsUrl} at ${new Date().toISOString()}`
-    );
+    console.log(`Attempting WebSocket connection to: ${wsUrl}`);
 
     setDebugInfo((prev) => ({
       ...prev,
@@ -80,10 +74,8 @@ export default function ClientDrawingPage() {
     }));
     const ws = new WebSocket(wsUrl);
 
-    // Add a timeout to detect connection issues
     const connectionTimeout = setTimeout(() => {
       if (ws.readyState !== 1) {
-        // 1 = OPEN
         console.error("WebSocket connection timed out after 5 seconds");
         setError(
           "WebSocket connection timed out - server may not be reachable"
@@ -93,23 +85,15 @@ export default function ClientDrawingPage() {
     }, 5000);
 
     ws.onopen = () => {
-      console.log(`WebSocket connection OPENED at ${new Date().toISOString()}`);
+      console.log("WebSocket connection opened");
       clearTimeout(connectionTimeout);
       setDebugInfo((prev) => ({ ...prev, wsStatus: "Connected ✓" }));
     };
 
-    // In setupWebSocket function:
-    // Update your WebSocket onmessage handler:
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
 
-        // Log the raw message occasionally
-        if (Math.random() < 0.05) {
-          console.log("Raw WebSocket message:", message);
-        }
-
-        // Update debug info with every message
         setDebugInfo((prev) => ({
           ...prev,
           lastMessageTime: Date.now(),
@@ -120,21 +104,17 @@ export default function ClientDrawingPage() {
           console.log(`Received client_id: ${message.client_id}`);
           setClientId(message.client_id);
         } else if (message.type === "detections") {
-          // Update the detections count in debug info
           setDebugInfo((prev) => ({
             ...prev,
             detectionCount: message.data.length,
           }));
 
-          // IMPORTANT: Always update detections, even if empty
-          // Make sure we're creating a new array to trigger React state updates
           setDetections([...message.data]);
 
           if (message.data.length > 0) {
-            // Log detailed information about the first detection
             const firstDetection = message.data[0];
             console.log(
-              `Received ${message.data.length} detections. First: ${firstDetection.class_name} (${firstDetection.confidence.toFixed(2)}) at [${firstDetection.x1.toFixed(0)},${firstDetection.y1.toFixed(0)}]`
+              `Received ${message.data.length} detections. First: ${firstDetection.class_name} (${firstDetection.confidence.toFixed(2)})`
             );
           }
         }
@@ -145,8 +125,6 @@ export default function ClientDrawingPage() {
 
     ws.onerror = (error) => {
       console.error("WebSocket error:", error);
-      // Inspect the error object in detail
-      console.dir(error, { depth: null });
       setError(
         `Failed to connect to detection stream: ${error.message || "Unknown error"}`
       );
@@ -165,7 +143,7 @@ export default function ClientDrawingPage() {
     return ws;
   };
 
-  // Function to clean up WebSocket
+  // Clean up WebSocket connection
   const cleanupWebSocket = () => {
     if (wsRef.current) {
       wsRef.current.close();
@@ -173,29 +151,24 @@ export default function ClientDrawingPage() {
     }
   };
 
+  // Draw bounding boxes on canvas based on detections
   const drawBoundingBoxes = () => {
     const canvas = canvasRef.current;
     const video = remoteVideoRef.current;
 
     if (!canvas || !video || !video.videoWidth) {
-      console.log("Canvas or video not ready yet");
-      // Schedule next frame even if not ready yet
       animationRef.current = requestAnimationFrame(drawBoundingBoxes);
       return;
     }
 
-    // Set canvas size to match video dimensions exactly
     if (
       canvas.width !== video.videoWidth ||
       canvas.height !== video.videoHeight
     ) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      console.log(
-        `Canvas resized to match video: ${canvas.width}x${canvas.height}`
-      );
+      console.log(`Canvas resized: ${canvas.width}x${canvas.height}`);
 
-      // Update debug info when canvas is resized
       setDebugInfo((prev) => ({
         ...prev,
         canvasSize: { width: canvas.width, height: canvas.height },
@@ -208,58 +181,24 @@ export default function ClientDrawingPage() {
       return;
     }
 
-    // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Log all detections periodically to debug
-    if (Math.random() < 0.01) {
-      // Log about 1% of frames
-      console.log(`Current detections (${detections.length}):`, detections);
-      console.log(`Canvas size: ${canvas.width}x${canvas.height}`);
-    }
-
-    // Draw detections that meet confidence threshold
     const filteredDetections = detections.filter(
       (d) => d.confidence >= confidenceThreshold
     );
 
-    // If we have detections, log them
-    if (filteredDetections.length > 0 && Math.random() < 0.1) {
-      console.log(
-        `Drawing ${filteredDetections.length} detections that passed threshold ${confidenceThreshold}`
-      );
-    }
-
-    // Now draw all the bounding boxes
     filteredDetections.forEach((detection) => {
       try {
-        // Calculate scaling based on the image dimensions from the detection
-        // and the current canvas dimensions
         const scaleX = canvas.width / (detection.image_width || canvas.width);
         const scaleY =
           canvas.height / (detection.image_height || canvas.height);
 
-        // Calculate scaled coordinates
         const x1 = detection.x1 * scaleX;
         const y1 = detection.y1 * scaleY;
         const width = (detection.x2 - detection.x1) * scaleX;
         const height = (detection.y2 - detection.y1) * scaleY;
 
-        // For debugging - log the coordinates occasionally
-        if (Math.random() < 0.05) {
-          console.log(
-            `Drawing detection: ${detection.class_name} (${detection.confidence.toFixed(2)})`
-          );
-          console.log(
-            `Original: x1=${detection.x1}, y1=${detection.y1}, x2=${detection.x2}, y2=${detection.y2}`
-          );
-          console.log(
-            `Scaled: x1=${x1}, y1=${y1}, width=${width}, height=${height}`
-          );
-          console.log(`Scale factors: ${scaleX}x${scaleY}`);
-        }
-
-        // Draw bounding box with the user-selected color
+        // Draw bounding box
         ctx.strokeStyle = boxColor;
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -272,11 +211,9 @@ export default function ClientDrawingPage() {
         const textMetrics = ctx.measureText(label);
         const labelY = y1 > 25 ? y1 - 5 : y1 + 20;
 
-        // Background for text
         ctx.fillStyle = boxColor;
         ctx.fillRect(x1, labelY - 20, textMetrics.width + 10, 25);
 
-        // Text
         ctx.fillStyle = "#000000";
         ctx.fillText(label, x1 + 5, labelY);
       } catch (err) {
@@ -284,21 +221,19 @@ export default function ClientDrawingPage() {
       }
     });
 
-    // Continue animation loop
     animationRef.current = requestAnimationFrame(drawBoundingBoxes);
   };
 
-  // Rest of your existing functions (startWebRTC, stopWebRTC, etc.)...
+  // Start WebRTC connection and video streaming
   const startWebRTC = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // FIRST: Ensure WebSocket is connected before proceeding
+      // Connect WebSocket first
       const wsPromise = new Promise((resolve, reject) => {
         const ws = setupWebSocket();
 
-        // Set up a timeout for WebSocket connection
         const wsTimeout = setTimeout(() => {
           reject(new Error("WebSocket connection timed out"));
         }, 5000);
@@ -316,7 +251,7 @@ export default function ClientDrawingPage() {
 
       try {
         await wsPromise;
-        console.log("WebSocket connected successfully, proceeding with WebRTC");
+        console.log("WebSocket connected, proceeding with WebRTC");
       } catch (wsError) {
         console.error("Failed to establish WebSocket connection:", wsError);
         setError("Could not connect to detection stream. Please try again.");
@@ -350,27 +285,20 @@ export default function ClientDrawingPage() {
       });
 
       // Set up remote video
-      // In your startWebRTC function:
       pc.ontrack = (event) => {
-        console.log("Received remote track", event);
+        console.log("Received remote track");
         if (remoteVideoRef.current && event.streams[0]) {
           console.log("Setting remote video source");
           remoteVideoRef.current.srcObject = event.streams[0];
 
-          // Start drawing bounding boxes when video metadata is loaded
           remoteVideoRef.current.onloadedmetadata = () => {
             console.log("Remote video metadata loaded");
 
-            // Initialize canvas immediately
+            // Initialize canvas
             if (canvasRef.current && remoteVideoRef.current) {
               canvasRef.current.width = remoteVideoRef.current.videoWidth;
               canvasRef.current.height = remoteVideoRef.current.videoHeight;
 
-              console.log(
-                `Canvas initialized to ${canvasRef.current.width}x${canvasRef.current.height}`
-              );
-
-              // Update debug info
               setDebugInfo((prev) => ({
                 ...prev,
                 canvasSize: {
@@ -388,15 +316,12 @@ export default function ClientDrawingPage() {
             remoteVideoRef.current
               .play()
               .then(() => {
-                console.log("Remote video playback started successfully");
+                console.log("Remote video playback started");
 
-                // Stop any existing animation loop
                 if (animationRef.current) {
                   cancelAnimationFrame(animationRef.current);
                 }
 
-                // Start the animation loop
-                console.log("Starting drawing loop");
                 animationRef.current = requestAnimationFrame(drawBoundingBoxes);
               })
               .catch((err) => {
@@ -406,6 +331,7 @@ export default function ClientDrawingPage() {
           };
         }
       };
+
       // Connection state changes
       pc.onconnectionstatechange = () => {
         console.log("Connection state:", pc.connectionState);
@@ -434,7 +360,6 @@ export default function ClientDrawingPage() {
         retries++;
       }
 
-      // Send offer to backend
       console.log(`Sending offer with client_id: ${clientId}`);
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5005"}/client-drawing-offer`,
@@ -446,7 +371,7 @@ export default function ClientDrawingPage() {
           body: JSON.stringify({
             sdp: pc.localDescription?.sdp,
             type: pc.localDescription?.type,
-            client_id: clientId, // Make sure this is set
+            client_id: clientId,
           }),
         }
       );
@@ -468,35 +393,30 @@ export default function ClientDrawingPage() {
     }
   };
 
+  // Stop WebRTC connection and clean up resources
   const stopWebRTC = async () => {
-    // Stop animation loop
     if (animationRef.current !== null) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
 
-    // Close WebSocket connection
     cleanupWebSocket();
 
-    // Close WebRTC connection
     if (pcRef.current) {
       pcRef.current.close();
       pcRef.current = null;
     }
 
-    // Stop all tracks in local video
     if (localVideoRef.current && localVideoRef.current.srcObject) {
       const stream = localVideoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach((track) => track.stop());
       localVideoRef.current.srcObject = null;
     }
 
-    // Clear remote video
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = null;
     }
 
-    // Clear canvas
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext("2d");
       if (ctx) {
@@ -509,7 +429,7 @@ export default function ClientDrawingPage() {
     setIsConnected(false);
   };
 
-  // Add a debug update interval
+  // Update debug info periodically
   useEffect(() => {
     const debugInterval = setInterval(() => {
       if (remoteVideoRef.current) {
@@ -526,66 +446,49 @@ export default function ClientDrawingPage() {
     return () => clearInterval(debugInterval);
   }, []);
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopWebRTC();
     };
   }, []);
 
-  // Add this effect to ensure the animation loop starts and stays running
+  // Ensure animation loop starts and stays running when connection status changes
   useEffect(() => {
-    // This effect starts the animation loop when we have a video feed
-    // and detections are being received
     if (
       isConnected &&
       remoteVideoRef.current &&
       remoteVideoRef.current.videoWidth > 0
     ) {
-      console.log(
-        "Starting or restarting animation loop due to connection status change"
-      );
-
-      // Cancel any existing animation frame
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
 
-      // Start a new animation loop
       animationRef.current = requestAnimationFrame(drawBoundingBoxes);
 
-      // Initialize canvas if needed
       if (canvasRef.current) {
         canvasRef.current.width = remoteVideoRef.current.videoWidth;
         canvasRef.current.height = remoteVideoRef.current.videoHeight;
-        console.log(
-          `Canvas initialized in effect: ${canvasRef.current.width}x${canvasRef.current.height}`
-        );
       }
     }
 
     return () => {
-      // Clean up animation frame on unmount or when connection changes
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
   }, [isConnected, drawBoundingBoxes]);
 
-  // Add this effect to update debug info whenever detections change
+  // Update debug info when detections change
   useEffect(() => {
     setDebugInfo((prev) => ({
       ...prev,
       detectionCount: detections.length,
     }));
-
-    // Log when detections state changes
-    console.log(`Detections state updated: ${detections.length} items`);
   }, [detections]);
 
-  // Return your existing JSX but add a debug panel:
   return (
     <main className="flex flex-col items-center p-8 max-w-6xl mx-auto">
-      {/* Existing UI components... */}
       <h1 className="text-3xl font-bold mb-8 text-center">
         YOLO WebRTC - Client-Side Drawing
       </h1>
@@ -622,7 +525,6 @@ export default function ClientDrawingPage() {
                 playsInline
                 className="w-full h-full object-cover"
               />
-              {/* Canvas overlay for drawing bounding boxes */}
               <canvas
                 ref={canvasRef}
                 className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
@@ -689,7 +591,7 @@ export default function ClientDrawingPage() {
           <AlertDescription>Error: {error}</AlertDescription>
         </Alert>
       )}
-      {/* Add debug panel at the bottom */}
+
       <Card className="w-full mt-8">
         <CardHeader>
           <CardTitle>Debug Information</CardTitle>
