@@ -32,6 +32,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="YOLO WebRTC Object Detection")
+# disable access logs
+app.middleware_stack = None
 
 # Add CORS middleware
 app.add_middleware(
@@ -387,12 +389,6 @@ class ClientDrawingYOLOVideoStreamTrack(VideoStreamTrack):
                             "image_width": img_width,
                             "image_height": img_height
                         })
-                elif self._frame_count % 100 == 0:  # Log occasionally when no detections are found
-                    logger.info(f"[Client-Drawing] No detections for client {self.client_id} (frame {self._frame_count})")
-                    
-                    # Clear out all last logged timestamps for this client
-                    if self.client_id in last_logged_predictions:
-                        last_logged_predictions[self.client_id].clear()
                         
             except Exception as e:
                 logger.error(f"[Client-Drawing] Error in YOLO detection: {e}")
@@ -546,7 +542,8 @@ async def localonly_websocket_detections(websocket: WebSocket):
                             
                             # Log if needed
                             if should_log and len(detected_classes) > 0:
-                                logger.info(f"LocalOnly Client {client_id}: Found {len(detections)} detections: {', '.join([f'{c} ({v:.2f})' for c, v in detected_classes.items()])}")
+                                if len(detected_classes) > 0:
+                                    logger.info(f"LocalOnly Client {client_id}: Found {len(detections)} detections: {', '.join([f'{c} ({v:.2f})' for c, v in detected_classes.items()])}")
                                 
                                 # Update last logged timestamps for all current classes
                                 for class_name in current_classes:
@@ -596,4 +593,5 @@ async def localonly_websocket_detections(websocket: WebSocket):
 
 if __name__ == "__main__":
     logger.info("Starting server...")
-    uvicorn.run("app:app", host="0.0.0.0", port=5005, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=5005, reload=True, log_level="warning")
+
