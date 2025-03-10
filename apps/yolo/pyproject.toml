@@ -1,0 +1,25 @@
+[project]
+name = "yolo"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Manik Rana",email = "manikrana54@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "ruff (>=0.9.10,<0.10.0)",
+    "av (>=13.0.0,<14.0.0)",
+    "aiortc (>=1.10.1,<2.0.0)",
+    "numpy (>=2.1.1,<3.0.0)",
+    "ultralytics (>=8.3.86,<9.0.0)",
+    "fastapi (>=0.115.11,<0.116.0)",
+    "uvicorn (>=0.34.0,<0.35.0)",
+    "opencv-python (>=4.11.0.86,<5.0.0.0)",
+    "python-multipart (>=0.0.20,<0.0.21)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

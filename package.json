@@ -9,7 +9,7 @@
     "lint": "turbo lint",
     "format": "turbo format",
     "prepare": "bun install --ignore-scripts",
-    "postinstall": "cd apps/ml && poetry install",
+    "postinstall": "cd apps/yolo && poetry install",
     "shadcn": "cd packages/ui && bun shadcn"
   },
   "devDependencies": {
