@@ -1,4 +1,4 @@
-// app/page.tsx
+// app/server/page.tsx
 "use client";
 
 import { Alert, AlertDescription } from "@repo/ui/components/alert";
