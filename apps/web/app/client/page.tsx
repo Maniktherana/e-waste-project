@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/components/select";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface Detection {
   x1: number;
@@ -38,6 +38,13 @@ export default function ClientDrawingPage() {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const animationRef = useRef<number | null>(null);
+
+  // Store detections in a ref to avoid re-renders
+  const detectionsRef = useRef<Detection[]>([]);
+
+  // Store canvas drawing state in refs
+  const scaleFactorsRef = useRef({ x: 1, y: 1 });
+  const frameCountRef = useRef(0);
 
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -94,30 +101,40 @@ export default function ClientDrawingPage() {
       try {
         const message = JSON.parse(event.data);
 
-        setDebugInfo((prev) => ({
-          ...prev,
-          lastMessageTime: Date.now(),
-          messageCount: prev.messageCount + 1,
-        }));
+        // Update debug info less frequently
+        if (frameCountRef.current % 10 === 0) {
+          setDebugInfo((prev) => ({
+            ...prev,
+            lastMessageTime: Date.now(),
+            messageCount: prev.messageCount + 1,
+          }));
+        }
 
         if (message.type === "client_id") {
           console.log(`Received client_id: ${message.client_id}`);
           setClientId(message.client_id);
         } else if (message.type === "detections") {
-          setDebugInfo((prev) => ({
-            ...prev,
-            detectionCount: message.data.length,
-          }));
+          // Store in ref for immediate access
+          detectionsRef.current = message.data;
 
-          setDetections([...message.data]);
+          // Update state less frequently
+          if (frameCountRef.current % 5 === 0) {
+            setDetections(message.data);
+            setDebugInfo((prev) => ({
+              ...prev,
+              detectionCount: message.data.length,
+            }));
+          }
 
-          if (message.data.length > 0) {
+          if (message.data.length > 0 && frameCountRef.current % 30 === 0) {
             const firstDetection = message.data[0];
             console.log(
               `Received ${message.data.length} detections. First: ${firstDetection.class_name} (${firstDetection.confidence.toFixed(2)})`
             );
           }
         }
+
+        frameCountRef.current++;
       } catch (err) {
         console.error("Error processing WebSocket message:", err);
       }
@@ -152,7 +169,7 @@ export default function ClientDrawingPage() {
   };
 
   // Draw bounding boxes on canvas based on detections
-  const drawBoundingBoxes = () => {
+  const drawBoundingBoxes = useCallback(() => {
     const canvas = canvasRef.current;
     const video = remoteVideoRef.current;
 
@@ -161,17 +178,28 @@ export default function ClientDrawingPage() {
       return;
     }
 
+    // Only resize canvas when dimensions change
     if (
       canvas.width !== video.videoWidth ||
       canvas.height !== video.videoHeight
     ) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      console.log(`Canvas resized: ${canvas.width}x${canvas.height}`);
 
+      // Calculate and cache scale factors
+      if (detectionsRef.current.length > 0) {
+        const detection = detectionsRef.current[0];
+        scaleFactorsRef.current = {
+          x: canvas.width / (detection.image_width || canvas.width),
+          y: canvas.height / (detection.image_height || canvas.height),
+        };
+      }
+
+      // Update debug info when canvas is resized
       setDebugInfo((prev) => ({
         ...prev,
         canvasSize: { width: canvas.width, height: canvas.height },
+        videoSize: { width: video.videoWidth, height: video.videoHeight },
       }));
     }
 
@@ -181,48 +209,56 @@ export default function ClientDrawingPage() {
       return;
     }
 
+    // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const filteredDetections = detections.filter(
+    // Use data from ref for latest detections
+    const currentDetections = detectionsRef.current;
+
+    // Filter detections based on confidence threshold
+    const filteredDetections = currentDetections.filter(
       (d) => d.confidence >= confidenceThreshold
     );
 
-    filteredDetections.forEach((detection) => {
-      try {
-        const scaleX = canvas.width / (detection.image_width || canvas.width);
-        const scaleY =
-          canvas.height / (detection.image_height || canvas.height);
+    // Draw bounding boxes
+    if (filteredDetections.length > 0) {
+      const { x: scaleX, y: scaleY } = scaleFactorsRef.current;
 
-        const x1 = detection.x1 * scaleX;
-        const y1 = detection.y1 * scaleY;
-        const width = (detection.x2 - detection.x1) * scaleX;
-        const height = (detection.y2 - detection.y1) * scaleY;
+      filteredDetections.forEach((detection) => {
+        try {
+          // Pre-calculate coordinates
+          const x1 = detection.x1 * scaleX;
+          const y1 = detection.y1 * scaleY;
+          const width = (detection.x2 - detection.x1) * scaleX;
+          const height = (detection.y2 - detection.y1) * scaleY;
 
-        // Draw bounding box
-        ctx.strokeStyle = boxColor;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.rect(x1, y1, width, height);
-        ctx.stroke();
+          // Draw bounding box
+          ctx.strokeStyle = boxColor;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.rect(x1, y1, width, height);
+          ctx.stroke();
 
-        // Draw label with background
-        const label = `${detection.class_name} ${(detection.confidence * 100).toFixed(0)}%`;
-        ctx.font = "16px Arial";
-        const textMetrics = ctx.measureText(label);
-        const labelY = y1 > 25 ? y1 - 5 : y1 + 20;
+          // Draw label with background
+          const label = `${detection.class_name} ${(detection.confidence * 100).toFixed(0)}%`;
+          ctx.font = "16px Arial";
+          const textMetrics = ctx.measureText(label);
+          const labelY = y1 > 25 ? y1 - 5 : y1 + 20;
 
-        ctx.fillStyle = boxColor;
-        ctx.fillRect(x1, labelY - 20, textMetrics.width + 10, 25);
+          ctx.fillStyle = boxColor;
+          ctx.fillRect(x1, labelY - 20, textMetrics.width + 10, 25);
 
-        ctx.fillStyle = "#000000";
-        ctx.fillText(label, x1 + 5, labelY);
-      } catch (err) {
-        console.error("Error drawing detection:", err, detection);
-      }
-    });
+          ctx.fillStyle = "#000000";
+          ctx.fillText(label, x1 + 5, labelY);
+        } catch (err) {
+          console.error("Error drawing detection:", err);
+        }
+      });
+    }
 
+    // Continue animation loop
     animationRef.current = requestAnimationFrame(drawBoundingBoxes);
-  };
+  }, [boxColor, confidenceThreshold]);
 
   // Start WebRTC connection and video streaming
   const startWebRTC = async () => {
@@ -424,12 +460,13 @@ export default function ClientDrawingPage() {
       }
     }
 
+    detectionsRef.current = [];
     setDetections([]);
     setClientId(null);
     setIsConnected(false);
   };
 
-  // Update debug info periodically
+  // Update debug info less frequently
   useEffect(() => {
     const debugInterval = setInterval(() => {
       if (remoteVideoRef.current) {
@@ -441,7 +478,7 @@ export default function ClientDrawingPage() {
           },
         }));
       }
-    }, 2000);
+    }, 5000); // Reduced frequency from 2000ms to 5000ms
 
     return () => clearInterval(debugInterval);
   }, []);
@@ -464,6 +501,7 @@ export default function ClientDrawingPage() {
         cancelAnimationFrame(animationRef.current);
       }
 
+      // Start the animation loop with the memoized function
       animationRef.current = requestAnimationFrame(drawBoundingBoxes);
 
       if (canvasRef.current) {
@@ -478,14 +516,6 @@ export default function ClientDrawingPage() {
       }
     };
   }, [isConnected, drawBoundingBoxes]);
-
-  // Update debug info when detections change
-  useEffect(() => {
-    setDebugInfo((prev) => ({
-      ...prev,
-      detectionCount: detections.length,
-    }));
-  }, [detections]);
 
   return (
     <main className="flex flex-col items-center p-8 max-w-6xl mx-auto">
@@ -528,6 +558,7 @@ export default function ClientDrawingPage() {
               <canvas
                 ref={canvasRef}
                 className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
+                style={{ backgroundColor: "transparent" }}
               />
             </div>
           </CardContent>
