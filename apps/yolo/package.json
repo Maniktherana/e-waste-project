@@ -1,0 +1,10 @@
+{
+  "name": "@repo/yolo",
+  "scripts": {
+    "dev": "cd yolo && poetry run uvicorn main:app --reload --host 0.0.0.0 --port 5005 --log-level debug",
+    "test": "cd yolo && poetry run python -m yolo.main",
+    "build": "echo 'No build needed for Python project'",
+    "lint": "poetry run ruff check .",
+    "format": "poetry run ruff format ."
+  }
+}
