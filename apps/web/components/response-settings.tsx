@@ -21,7 +21,6 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-// Get unique cities
 const uniqueCities = Array.from(
   new Set(LOCATIONS.map((loc) => loc.city))
 ).sort();
@@ -43,7 +42,6 @@ export default function ResponseSettings({
   } = useDetectionStore();
 
   const [selectedCity, setSelectedCity] = useState<string>(() => {
-    // Initialize from localStorage if available
     if (typeof window !== "undefined") {
       return localStorage.getItem("selectedCity") || "";
     }
@@ -51,7 +49,6 @@ export default function ResponseSettings({
   });
 
   const [selectedLang, setSelectedLang] = useState<string>(() => {
-    // Initialize from localStorage if available
     if (typeof window !== "undefined") {
       return localStorage.getItem("selectedLang") || "English";
     }
@@ -60,16 +57,13 @@ export default function ResponseSettings({
 
   // Notify parent of settings changes
   useEffect(() => {
-    // Store in local storage for persistence
     if (selectedCity) localStorage.setItem("selectedCity", selectedCity);
     localStorage.setItem("selectedLang", selectedLang);
 
-    // Notify parent component
     onSettingsChange(selectedCity, selectedLang);
   }, [selectedCity, selectedLang, onSettingsChange]);
 
   useEffect(() => {
-    // If selection changed, trigger response dialog but verify we have a city selected
     if (selectedDetection) {
       if (!selectedCity) {
         toast.error("Please select a city first");
