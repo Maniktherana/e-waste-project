@@ -37,10 +37,8 @@ export default function LocalDetectionPage() {
   const wsRef = useRef<WebSocket | null>(null);
   const animationRef = useRef<number | null>(null);
 
-  // Store detections in a ref to avoid re-renders
   const detectionsRef = useRef<Detection[]>([]);
 
-  // Store canvas drawing state in refs
   const scaleFactorsRef = useRef({ x: 1, y: 1 });
   const frameCountRef = useRef(0);
 
@@ -68,7 +66,6 @@ export default function LocalDetectionPage() {
     videoSize: null,
   });
 
-  // Set up WebSocket connection for detection data
   const setupWebSocket = () => {
     const wsUrl = `ws://127.0.0.1:5005/localonly/ws/detections`;
     console.log(`Attempting WebSocket connection to: ${wsUrl}`);
@@ -94,7 +91,6 @@ export default function LocalDetectionPage() {
       clearTimeout(connectionTimeout);
       setDebugInfo((prev) => ({ ...prev, wsStatus: "Connected ✓" }));
 
-      // Start capturing and sending local video frames
       startVideoCapture();
     };
 
@@ -102,7 +98,6 @@ export default function LocalDetectionPage() {
       try {
         const message = JSON.parse(event.data);
 
-        // Update debug info less frequently
         if (frameCountRef.current % 10 === 0) {
           setDebugInfo((prev) => ({
             ...prev,
@@ -115,10 +110,8 @@ export default function LocalDetectionPage() {
           console.log(`Received client_id: ${message.client_id}`);
           setClientId(message.client_id);
         } else if (message.type === "detections") {
-          // Store in ref for immediate access
           detectionsRef.current = message.data;
 
-          // Update state less frequently
           if (frameCountRef.current % 5 === 0) {
             setDetections(message.data);
             setDebugInfo((prev) => ({
@@ -144,11 +137,11 @@ export default function LocalDetectionPage() {
     ws.onerror = (error) => {
       console.error("WebSocket error:", error);
       setError(
-        `Failed to connect to detection stream: ${error.message || "Unknown error"}`
+        `Failed to connect to detection stream: ${(error as ErrorEvent).message || "Unknown error"}`
       );
       setDebugInfo((prev) => ({
         ...prev,
-        wsStatus: `Error: ${error.message || "Unknown"}`,
+        wsStatus: `Error: ${(error as ErrorEvent).message || "Unknown"}`,
       }));
     };
 
@@ -179,7 +172,6 @@ export default function LocalDetectionPage() {
       return;
     }
 
-    // Only resize canvas when dimensions change
     if (
       canvas.width !== video.videoWidth ||
       canvas.height !== video.videoHeight
@@ -187,7 +179,6 @@ export default function LocalDetectionPage() {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      // Update debug info when canvas is resized
       setDebugInfo((prev) => ({
         ...prev,
         canvasSize: { width: canvas.width, height: canvas.height },
@@ -201,13 +192,10 @@ export default function LocalDetectionPage() {
       return;
     }
 
-    // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Use data from ref for latest detections
     const currentDetections = detectionsRef.current;
 
-    // Filter detections based on confidence threshold
     const filteredDetections = currentDetections.filter(
       (d) => d.confidence >= confidenceThreshold
     );
@@ -220,17 +208,14 @@ export default function LocalDetectionPage() {
 
       filteredDetections.forEach((detection) => {
         try {
-          // Calculate scaling based on detection image size and canvas size
           const scaleX = videoWidth / (detection.image_width || videoWidth);
           const scaleY = videoHeight / (detection.image_height || videoHeight);
 
-          // Apply scaling to coordinates
           const x1 = detection.x1 * scaleX;
           const y1 = detection.y1 * scaleY;
           const width = (detection.x2 - detection.x1) * scaleX;
           const height = (detection.y2 - detection.y1) * scaleY;
 
-          // Draw bounding box
           ctx.strokeStyle = boxColor;
           ctx.lineWidth = 3;
           ctx.beginPath();
@@ -261,7 +246,6 @@ export default function LocalDetectionPage() {
   // Capture local video and send frames to server for processing
   const startVideoCapture = async () => {
     try {
-      // Get user media
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 1280 },
@@ -270,7 +254,6 @@ export default function LocalDetectionPage() {
         audio: false,
       });
 
-      // Display local video
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
 
@@ -278,7 +261,6 @@ export default function LocalDetectionPage() {
         videoRef.current.onloadedmetadata = () => {
           console.log("Video metadata loaded");
 
-          // Initialize canvas with video dimensions
           if (canvasRef.current && videoRef.current) {
             canvasRef.current.width = videoRef.current.videoWidth;
             canvasRef.current.height = videoRef.current.videoHeight;
@@ -296,7 +278,6 @@ export default function LocalDetectionPage() {
             }));
           }
 
-          // Play the video
           videoRef.current
             .play()
             .then(() => {
@@ -317,7 +298,6 @@ export default function LocalDetectionPage() {
             });
         };
 
-        // Use a canvas to capture frames and send to server
         const captureCanvas = document.createElement("canvas");
         const captureCtx = captureCanvas.getContext("2d");
 
@@ -329,11 +309,9 @@ export default function LocalDetectionPage() {
 
           if (videoRef.current && captureCtx) {
             try {
-              // Set canvas dimensions to match video
               captureCanvas.width = videoRef.current.videoWidth;
               captureCanvas.height = videoRef.current.videoHeight;
 
-              // Draw current video frame to canvas
               captureCtx.drawImage(
                 videoRef.current,
                 0,
@@ -342,10 +320,8 @@ export default function LocalDetectionPage() {
                 captureCanvas.height
               );
 
-              // Convert to JPEG data URL
               const frameDataUrl = captureCanvas.toDataURL("image/jpeg", 0.7);
 
-              // Send frame to server for processing
               wsRef.current.send(
                 JSON.stringify({
                   type: "video_frame",
@@ -360,7 +336,6 @@ export default function LocalDetectionPage() {
           }
         }, 200); // Capture at ~5 fps for performance
 
-        // Store interval ID for cleanup
         return () => {
           clearInterval(captureInterval);
         };
@@ -374,13 +349,11 @@ export default function LocalDetectionPage() {
     }
   };
 
-  // Start connection to backend and camera
   const startDetection = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // Set up WebSocket connection
       setupWebSocket();
     } catch (err) {
       console.error("Error starting detection:", err);
@@ -392,18 +365,14 @@ export default function LocalDetectionPage() {
     }
   };
 
-  // Stop detection and clean up
   const stopDetection = async () => {
-    // Stop animation loop
     if (animationRef.current !== null) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
 
-    // Close WebSocket connection
     cleanupWebSocket();
 
-    // Stop all video tracks
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach((track) => track.stop());
@@ -441,7 +410,6 @@ export default function LocalDetectionPage() {
     return () => clearInterval(debugInterval);
   }, []);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopDetection();
