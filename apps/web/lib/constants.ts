@@ -1,0 +1,30 @@
+export const LOCATIONS = [
+  { id: "1", city: "Greater Noida", state: "UTTAR_PRADESH" },
+  { id: "2", city: "Ghaziabad", state: "UTTAR_PRADESH" },
+  { id: "3", city: "Noida", state: "UTTAR_PRADESH" },
+  { id: "4", city: "Ahmedabad", state: "GUJARAT" },
+  { id: "5", city: "Bhopal", state: "MADHYA_PRADESH" },
+  { id: "6", city: "Bhubaneswar", state: "ODISHA" },
+  { id: "7", city: "Kamrup", state: "ASSAM" },
+  { id: "8", city: "Secundrabad", state: "ANDHRA_PRADESH" },
+  { id: "9", city: "Nelmangala", state: "KARNATAKA" },
+  { id: "10", city: "Ranchi", state: "JHARKHAND" },
+  { id: "11", city: "Patna", state: "BIHAR" },
+  { id: "12", city: "Pargana", state: "WEST_BENGAL" },
+  { id: "13", city: "Ludhiana", state: "PUNJAB" },
+  { id: "14", city: "Jammu", state: "JAMMU_&_KASHMIR" },
+  { id: "15", city: "Thane", state: "MAHARASHTRA" },
+  { id: "16", city: "Jaipur", state: "RAJASTHAN" },
+  { id: "17", city: "Bhalukpong", state: "ARUNACHAL_PRADESH" },
+  { id: "18", city: "Hyderabad", state: "TELANGANA" },
+  { id: "19", city: "Bangalore", state: "TAMILNADU" },
+  { id: "20", city: "Cochin", state: "TAMILNADU" },
+  { id: "21", city: "Dimapur", state: "NAGALAND" },
+];
+
+export const LANGUAGES = [
+  { id: "1", language: "English", display: "English" },
+  { id: "2", language: "Hindi", display: "हिन्दी" },
+  { id: "3", language: "Tamil", display: "தமிழ்" },
+  { id: "4", language: "Telugu", display: "తెలుగు" },
+];
