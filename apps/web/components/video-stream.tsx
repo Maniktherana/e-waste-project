@@ -384,164 +384,147 @@ export default function VideoStream({ onError }: VideoStreamProps) {
   }, []);
 
   return (
-    <>
-      <div className="w-full mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl text-center">
-              Camera Feed with Detections
-            </CardTitle>
-            <CardDescription className="text-center">
-              Analyze e-waste in real-time with AI detection
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-              <canvas
-                ref={canvasRef}
-                className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
-                style={{ backgroundColor: "transparent" }}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-xl text-center">
+          Camera Feed with Detections
+        </CardTitle>
+        <CardDescription className="text-center">
+          Analyze e-waste in real-time with AI detection
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="relative rounded-lg overflow-hidden bg-black aspect-video mb-4">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover"
+          />
+          <canvas
+            ref={canvasRef}
+            className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
+            style={{ backgroundColor: "transparent" }}
+          />
+        </div>
 
-      <Card className="w-full mb-6">
-        <CardHeader>
-          <CardTitle>Detection Settings</CardTitle>
-        </CardHeader>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">Confidence:</span>
+            <Select
+              value={confidenceThreshold.toString()}
+              onValueChange={(val) => setConfidenceThreshold(parseFloat(val))}
+              disabled={!isConnected}>
+              <SelectTrigger className="w-24">
+                <SelectValue placeholder="Confidence" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0.1">10%</SelectItem>
+                <SelectItem value="0.25">25%</SelectItem>
+                <SelectItem value="0.5">50%</SelectItem>
+                <SelectItem value="0.75">75%</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm">Box Color:</span>
+            <input
+              type="color"
+              value={boxColor}
+              onChange={(e) => setBoxColor(e.target.value)}
+              className="w-10 h-10 rounded cursor-pointer"
+              disabled={!isConnected}
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="debug-mode"
+              checked={showDebug}
+              onCheckedChange={toggleDebug}
+            />
+            <Label htmlFor="debug-mode">Debug Mode</Label>
+          </div>
+        </div>
+
+        <div className="flex justify-center">
+          {!isConnected ? (
+            <Button
+              onClick={startDetection}
+              disabled={isLoading}
+              className="text-base">
+              {isLoading ? "Connecting..." : "Start Detection"}
+            </Button>
+          ) : (
+            <Button
+              onClick={stopDetection}
+              variant="destructive"
+              className="text-base">
+              Stop Detection
+            </Button>
+          )}
+        </div>
+      </CardContent>
+
+      {showDebug && (
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm">Confidence:</span>
-              <Select
-                value={confidenceThreshold.toString()}
-                onValueChange={(val) => setConfidenceThreshold(parseFloat(val))}
-                disabled={!isConnected}>
-                <SelectTrigger className="w-24">
-                  <SelectValue placeholder="Confidence" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0.1">10%</SelectItem>
-                  <SelectItem value="0.25">25%</SelectItem>
-                  <SelectItem value="0.5">50%</SelectItem>
-                  <SelectItem value="0.75">75%</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <h3 className="font-semibold">WebSocket</h3>
+              <p>Status: {debugInfo.wsStatus}</p>
+              <p>Client ID: {clientId || "None"}</p>
+              <p>Messages: {debugInfo.messageCount}</p>
+              <p>
+                Last message:{" "}
+                {debugInfo.lastMessageTime
+                  ? new Date(debugInfo.lastMessageTime).toLocaleTimeString()
+                  : "None"}
+              </p>
             </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm">Box Color:</span>
-              <input
-                type="color"
-                value={boxColor}
-                onChange={(e) => setBoxColor(e.target.value)}
-                className="w-10 h-10 rounded cursor-pointer"
-                disabled={!isConnected}
-              />
+            <div>
+              <h3 className="font-semibold">Detections</h3>
+              <p>Current count: {debugInfo.detectionCount}</p>
+              <p>
+                Filtered count:{" "}
+                {
+                  localDetections.filter(
+                    (d) => d.confidence >= confidenceThreshold
+                  ).length
+                }
+              </p>
+              <p>Confidence threshold: {confidenceThreshold}</p>
             </div>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="debug-mode"
-                checked={showDebug}
-                onCheckedChange={toggleDebug}
-              />
-              <Label htmlFor="debug-mode">Debug Mode</Label>
+            <div>
+              <h3 className="font-semibold">Video/Canvas</h3>
+              <p>
+                Video size:{" "}
+                {debugInfo.videoSize
+                  ? `${debugInfo.videoSize.width}x${debugInfo.videoSize.height}`
+                  : "Unknown"}
+              </p>
+              <p>
+                Canvas size:{" "}
+                {debugInfo.canvasSize
+                  ? `${debugInfo.canvasSize.width}x${debugInfo.canvasSize.height}`
+                  : "Unknown"}
+              </p>
             </div>
+          </div>
 
-            <div className="flex justify-center mt-4 md:col-span-3">
-              {!isConnected ? (
-                <Button
-                  onClick={startDetection}
-                  disabled={isLoading}
-                  className="text-base">
-                  {isLoading ? "Connecting..." : "Start Detection"}
-                </Button>
+          <div className="w-full">
+            <h3 className="font-semibold mb-2">Latest Detections</h3>
+            <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs overflow-auto max-h-32">
+              {localDetections.length > 0 ? (
+                <pre>{JSON.stringify(localDetections, null, 2)}</pre>
               ) : (
-                <Button
-                  onClick={stopDetection}
-                  variant="destructive"
-                  className="text-base">
-                  Stop Detection
-                </Button>
+                <p>No detections yet</p>
               )}
             </div>
           </div>
         </CardContent>
-      </Card>
-
-      {showDebug && (
-        <Card className="w-full mt-8">
-          <CardHeader>
-            <CardTitle>Debug Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <h3 className="font-semibold">WebSocket</h3>
-                <p>Status: {debugInfo.wsStatus}</p>
-                <p>Client ID: {clientId || "None"}</p>
-                <p>Messages: {debugInfo.messageCount}</p>
-                <p>
-                  Last message:{" "}
-                  {debugInfo.lastMessageTime
-                    ? new Date(debugInfo.lastMessageTime).toLocaleTimeString()
-                    : "None"}
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold">Detections</h3>
-                <p>Current count: {debugInfo.detectionCount}</p>
-                <p>
-                  Filtered count:{" "}
-                  {
-                    localDetections.filter(
-                      (d) => d.confidence >= confidenceThreshold
-                    ).length
-                  }
-                </p>
-                <p>Confidence threshold: {confidenceThreshold}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold">Video/Canvas</h3>
-                <p>
-                  Video size:{" "}
-                  {debugInfo.videoSize
-                    ? `${debugInfo.videoSize.width}x${debugInfo.videoSize.height}`
-                    : "Unknown"}
-                </p>
-                <p>
-                  Canvas size:{" "}
-                  {debugInfo.canvasSize
-                    ? `${debugInfo.canvasSize.width}x${debugInfo.canvasSize.height}`
-                    : "Unknown"}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-          <CardContent>
-            <div className="w-full">
-              <h3 className="font-semibold mb-2">Latest Detections</h3>
-              <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs overflow-auto max-h-32">
-                {localDetections.length > 0 ? (
-                  <pre>{JSON.stringify(localDetections, null, 2)}</pre>
-                ) : (
-                  <p>No detections yet</p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       )}
-    </>
+    </Card>
   );
 }

@@ -54,15 +54,15 @@ export default function DetectionStreamingPage() {
         E-waste Detection & Analysis
       </h1>
 
-      <div className="w-full mb-8">
-        <VideoStream onError={handleError} />
-      </div>
-
       <div className="w-full mb-6">
         <ResponseSettings
           onShowResponse={handleShowResponse}
           onSettingsChange={handleSettingsChange}
         />
+      </div>
+
+      <div className="w-full mb-8">
+        <VideoStream onError={handleError} />
       </div>
 
       {error && (
