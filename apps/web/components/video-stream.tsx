@@ -65,6 +65,7 @@ export default function VideoStream({ onError }: VideoStreamProps) {
         console.error("WebSocket connection timed out after 5 seconds");
         onError("WebSocket connection timed out - server may not be reachable");
         setDebugInfo((prev) => ({ ...prev, wsStatus: "Connection timeout" }));
+        setIsLoading(false);
       }
     }, 5000);
 
@@ -140,11 +141,14 @@ export default function VideoStream({ onError }: VideoStreamProps) {
         ...prev,
         wsStatus: `Error: ${(error as ErrorEvent).message || "Unknown"}`,
       }));
+      setIsLoading(false);
     };
 
     ws.onclose = () => {
       console.log("WebSocket connection closed");
       setDebugInfo((prev) => ({ ...prev, wsStatus: "Closed" }));
+      setIsConnected(false);
+      setIsLoading(false);
     };
 
     wsRef.current = ws;
@@ -231,7 +235,9 @@ export default function VideoStream({ onError }: VideoStreamProps) {
       });
     }
 
-    animationRef.current = requestAnimationFrame(drawBoundingBoxes);
+    if (document.visibilityState === "visible") {
+      animationRef.current = requestAnimationFrame(drawBoundingBoxes);
+    }
   }, [boxColor, confidenceThreshold]);
 
   const startVideoCapture = async () => {
@@ -257,40 +263,47 @@ export default function VideoStream({ onError }: VideoStreamProps) {
             setDebugInfo((prev) => ({
               ...prev,
               canvasSize: {
-                width: canvasRef.current.width,
-                height: canvasRef.current.height,
+                width: canvasRef.current ? canvasRef.current.width : 0,
+                height: canvasRef.current ? canvasRef.current.width : 0,
               },
               videoSize: {
-                width: videoRef.current.videoWidth,
-                height: videoRef.current.videoHeight,
+                width: videoRef.current ? videoRef.current.videoWidth : 0,
+                height: videoRef.current ? videoRef.current.videoHeight : 0,
               },
             }));
           }
 
-          videoRef.current
-            .play()
-            .then(() => {
-              console.log("Video playback started");
+          if (videoRef.current) {
+            videoRef.current
+              .play()
+              .then(() => {
+                console.log("Video playback started");
 
-              if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current);
-              }
+                if (animationRef.current) {
+                  cancelAnimationFrame(animationRef.current);
+                }
 
-              animationRef.current = requestAnimationFrame(drawBoundingBoxes);
-              setIsConnected(true);
-              setIsLoading(false);
-            })
-            .catch((err) => {
-              console.error("Failed to play video:", err);
-              onError("Failed to start video playback. Please try again.");
-            });
+                animationRef.current = requestAnimationFrame(drawBoundingBoxes);
+                setIsConnected(true);
+                setIsLoading(false);
+              })
+              .catch((err) => {
+                console.error("Failed to play video:", err);
+                onError("Failed to start video playback. Please try again.");
+                setIsLoading(false);
+              });
+          }
         };
 
         const captureCanvas = document.createElement("canvas");
         const captureCtx = captureCanvas.getContext("2d");
 
         const captureInterval = setInterval(() => {
-          if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+          if (
+            !wsRef.current ||
+            wsRef.current.readyState !== WebSocket.OPEN ||
+            document.visibilityState !== "visible"
+          ) {
             return;
           }
 
@@ -377,7 +390,33 @@ export default function VideoStream({ onError }: VideoStreamProps) {
     setIsConnected(false);
   };
 
+  // Monitor visibility changes to stop/cleanup resources when tab is not visible
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && isConnected) {
+        console.log("Tab hidden, pausing video processing");
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+          animationRef.current = null;
+        }
+      } else if (document.visibilityState === "visible" && isConnected) {
+        console.log("Tab visible, resuming video processing");
+        if (!animationRef.current && videoRef.current) {
+          animationRef.current = requestAnimationFrame(drawBoundingBoxes);
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isConnected, drawBoundingBoxes]);
+
+  // Handle tab switching via parent's activeTab state
+  useEffect(() => {
+    // Clean up on unmount
     return () => {
       stopDetection();
     };
