@@ -125,22 +125,38 @@ def process_video(
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     duration = frame_count / fps if fps > 0 else 0
 
+    frames_per_second = max(1, int(fps / 4))
+    min_total_frames = 15
+    
+    if frame_count < min_total_frames * frames_per_second:
+        # For very short videos, process more frames
+        frames_per_second = max(1, int(frame_count / min_total_frames))
+    
+    logger.info(f"Video processing: fps={fps}, total frames={frame_count}, processing 1 frame every {frames_per_second} frames")
+
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
     model = get_model()
+    
     all_detections = {}
-
-    # Process every nth frame to improve performance
-    process_interval = max(1, int(fps / 2))
+    
+    frame_detections = {}
+    
     frame_idx = 0
+    processed_frames = 0
 
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
 
-        if frame_idx % process_interval == 0:
+        # Only run detection on every nth frame to improve performance
+        should_process = frame_idx % frames_per_second == 0
+        has_detections = False
+        
+        if should_process:
+            processed_frames += 1
             try:
                 results = model.predict(
                     source=frame, conf=conf_threshold, verbose=False
@@ -148,15 +164,17 @@ def process_video(
 
                 if results and len(results) > 0:
                     detections = results[0].boxes.data.cpu().numpy()
+                    
+                    frame_classes = set()  # Track classes detected in this frame
 
                     for detection in detections:
                         x1, y1, x2, y2, conf, class_id = detection
                         class_name = model.names[int(class_id)]
-
-                        # Keep track of highest confidence per class
+                        frame_classes.add(class_name)
+                        
                         if (
                             class_name not in all_detections
-                            or conf > all_detections[class_name]["confidence"]
+                            or conf > all_detections[class_name].confidence
                         ):
                             all_detections[class_name] = DetectionResult(
                                 x1=float(x1),
@@ -169,36 +187,87 @@ def process_video(
                                 image_width=frame_width,
                                 image_height=frame_height,
                             )
+                    
+                    if frame_classes:
+                        has_detections = True
+                        frame_detections[frame_idx] = frame_classes
+                        
+                        for detection in detections:
+                            x1, y1, x2, y2, conf, class_id = detection
+                            class_name = model.names[int(class_id)]
+                            
+                            cv2.rectangle(
+                                frame,
+                                (int(x1), int(y1)),
+                                (int(x2), int(y2)),
+                                (0, 255, 0),
+                                2,
+                            )
 
+                            label = f"{class_name} {conf:.2f}"
+                            cv2.putText(
+                                frame,
+                                label,
+                                (int(x1), int(y1) - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX,
+                                0.5,
+                                (0, 255, 0),
+                                2,
+                            )
+            
+            except Exception as e:
+                logger.error(f"Error processing video frame {frame_idx}: {e}")
+        
+        elif frame_detections:
+            nearest_frame = None
+            min_distance = frames_per_second // 2
+            
+            for processed_frame_idx in frame_detections:
+                distance = abs(processed_frame_idx - frame_idx)
+                if distance < min_distance:
+                    nearest_frame = processed_frame_idx
+                    min_distance = distance
+            
+            if nearest_frame is not None:
+                has_detections = True
+                
+                for class_name in frame_detections[nearest_frame]:
+                    if class_name in all_detections:
+                        detection = all_detections[class_name]
+                        
                         cv2.rectangle(
                             frame,
-                            (int(x1), int(y1)),
-                            (int(x2), int(y2)),
+                            (int(detection.x1), int(detection.y1)),
+                            (int(detection.x2), int(detection.y2)),
                             (0, 255, 0),
                             2,
                         )
 
-                        label = f"{class_name} {conf:.2f}"
+                        label = f"{detection.class_name} {detection.confidence:.2f}"
                         cv2.putText(
                             frame,
                             label,
-                            (int(x1), int(y1) - 10),
+                            (int(detection.x1), int(detection.y1) - 10),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             0.5,
                             (0, 255, 0),
                             2,
                         )
-            except Exception as e:
-                logger.error(f"Error processing video frame {frame_idx}: {e}")
 
         out.write(frame)
         frame_idx += 1
 
+        if frame_idx % 100 == 0:
+            progress = (frame_idx / frame_count) * 100 if frame_count > 0 else 0
+            logger.info(f"Video processing progress: {progress:.1f}% ({frame_idx}/{frame_count})")
+
     cap.release()
     out.release()
+    
+    logger.info(f"Video processing complete. Processed {processed_frames} frames. Found {len(all_detections)} unique classes.")
 
     detections_list = list(all_detections.values())
-
+    
     return detections_list, duration, frame_width, frame_height
 
 
@@ -266,6 +335,14 @@ async def upload_file(file: UploadFile = File(...), confidence: float = Form(Non
                 is_video=True,
                 duration=duration,
             )
+            
+        # Log detection results
+        class_counts = {}
+        for det in detections:
+            class_name = det.class_name
+            class_counts[class_name] = class_counts.get(class_name, 0) + 1
+        
+        logger.info(f"File processed successfully. Detected classes: {class_counts}")
 
         try:
             if os.path.exists(upload_path):
