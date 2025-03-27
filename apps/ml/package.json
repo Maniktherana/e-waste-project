@@ -1,7 +1,6 @@
 {
   "name": "@repo/ml",
   "scripts": {
-    "dev": "cd ml && poetry run uvicorn main:app --host 0.0.0.0 --port 5001 --log-level debug",
     "build": "echo 'No build needed for Python project'",
     "lint": "poetry run ruff check .",
     "format": "poetry run ruff format ."
